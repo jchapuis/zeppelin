@@ -605,8 +605,9 @@
                 for (var c in data.completions) {
                   var v = data.completions[c];
                   completions.push({
-                    name: v.name,
+                    name: v.value,
                     value: v.value,
+                    meta: v.name,
                     score: 300
                   });
                 }
@@ -616,17 +617,32 @@
           }
         };
 
-        langTools.setCompleters([remoteCompleter, langTools.keyWordCompleter, langTools.snippetCompleter,
-          langTools.textCompleter]);
-
+        langTools.setCompleters([remoteCompleter]);
         $scope.editor.setOptions({
-          enableBasicAutocompletion: true,
-          enableSnippets: false,
-          enableLiveAutocompletion: false
+          enableBasicAutocompletion: true
         });
-
+        $scope.editor.commands.on('afterExec', function(e) {
+          var commandName = e.command.name
+          var hasCompleter = $scope.editor.completer && $scope.editor.completer.activated;
+          var stringInserted = commandName === 'insertstring'
+          var spaceInserted = stringInserted && e.args === ' ' // Distinguish this case as space tends to close the completion box
+          var backspaceInserted = commandName === 'backspace'
+          if (spaceInserted || (stringInserted || backspaceInserted) && !hasCompleter) {
+            e.editor.execCommand('startAutocomplete'); 
+          }
+        });
         $scope.handleFocus = function(value, isDigestPass) {
           $scope.paragraphFocused = value;
+          var hasCompleter = $scope.editor.completer && $scope.editor.completer.activated;
+          if (value) {
+            if (!hasCompleter) {
+               $scope.editor.execCommand('startAutocomplete');
+            }
+          } else {
+            if (hasCompleter) {
+               $scope.editor.completer.detach();
+            }
+          }
           if (isDigestPass === false || isDigestPass === undefined) {
             // Protect against error in case digest is already running
             $timeout(function() {
@@ -666,9 +682,10 @@
         $scope.editor.commands.bindKey('ctrl-alt-n.', null);
         $scope.editor.commands.removeCommand('showSettingsMenu');
 
-        // autocomplete on 'ctrl+.'
+        // autocomplete on 'ctrl+.' or 'ctrl+space' or 'tab'
         $scope.editor.commands.bindKey('ctrl-.', 'startAutocomplete');
-        $scope.editor.commands.bindKey('ctrl-space', null);
+        $scope.editor.commands.bindKey('tab', 'startAutocomplete');
+        $scope.editor.commands.bindKey('ctrl-space', 'startAutocomplete');
 
         var keyBindingEditorFocusAction = function(scrollValue) {
           var numRows = $scope.editor.getSession().getLength();

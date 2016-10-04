@@ -530,12 +530,12 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('build', [
-    'jscs',
-    'eslint',
+    //'jscs',   disable style checkers, I don't care for now
+    //'eslint',
     'htmlhint',
     'clean:dist',
     'wiredep',
-    'goog-webfont-dl',
+    //'goog-webfont-dl', doesn't work see https://issues.apache.org/jira/browse/ZEPPELIN-1056
     'useminPrepare',
     'concurrent:dist',
     'postcss',
