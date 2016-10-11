@@ -604,11 +604,12 @@
                 var completions = [];
                 for (var c in data.completions) {
                   var v = data.completions[c];
+                  var nameAndScore = v.name.split(':');
                   completions.push({
                     name: v.value,
                     value: v.value,
-                    meta: v.name,
-                    score: 300
+                    meta: nameAndScore[0],
+                    score: nameAndScore[1]
                   });
                 }
                 callback(null, completions);
@@ -622,13 +623,19 @@
           enableBasicAutocompletion: true
         });
         $scope.editor.commands.on('afterExec', function(e) {
-          var commandName = e.command.name
+          var commandName = e.command.name;
           var hasCompleter = $scope.editor.completer && $scope.editor.completer.activated;
-          var stringInserted = commandName === 'insertstring'
-          var spaceInserted = stringInserted && e.args === ' ' // Distinguish this case as space tends to close the completion box
-          var backspaceInserted = commandName === 'backspace'
-          if (spaceInserted || (stringInserted || backspaceInserted) && !hasCompleter) {
-            e.editor.execCommand('startAutocomplete'); 
+          var stringInserted = commandName === 'insertstring';
+          var spaceInserted = stringInserted && e.args === ' '; // Distinguish this case as space tends to close the completion box
+          var backspaceInserted = commandName === 'backspace';
+          if (spaceInserted) {
+            $scope.editor.execCommand('startAutocomplete');
+          } else if (stringInserted || backspaceInserted) {
+            if (hasCompleter) {
+              $scope.editor.completer.updateCompletions();
+            } else {
+              $scope.editor.execCommand('startAutocomplete');
+            }
           }
         });
         $scope.handleFocus = function(value, isDigestPass) {
@@ -636,11 +643,11 @@
           var hasCompleter = $scope.editor.completer && $scope.editor.completer.activated;
           if (value) {
             if (!hasCompleter) {
-               $scope.editor.execCommand('startAutocomplete');
+              $scope.editor.execCommand('startAutocomplete');
             }
           } else {
             if (hasCompleter) {
-               $scope.editor.completer.detach();
+              $scope.editor.completer.detach();
             }
           }
           if (isDigestPass === false || isDigestPass === undefined) {
@@ -2693,7 +2700,7 @@
         } else if (editorHide && (keyCode === 40 || (keyCode === 78 && keyEvent.ctrlKey && !keyEvent.altKey))) { // down
           // move focus to next paragraph
           $scope.$emit('moveFocusToNextParagraph', paragraphId);
-        } else if (keyEvent.shiftKey && keyCode === 13) { // Shift + Enter
+        } else if (keyCode === 13) { // Enter
           $scope.run();
         } else if (keyEvent.ctrlKey && keyEvent.altKey && keyCode === 67) { // Ctrl + Alt + c
           $scope.cancelParagraph();

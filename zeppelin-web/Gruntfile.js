@@ -530,8 +530,8 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('build', [
-    //'jscs',   disable style checkers, I don't care for now
-    //'eslint',
+    'jscs',
+    'eslint',
     'htmlhint',
     'clean:dist',
     'wiredep',
