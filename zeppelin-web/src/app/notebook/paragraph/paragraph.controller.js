@@ -579,7 +579,6 @@
         });
 
         if (navigator.appVersion.indexOf('Mac') !== -1) {
-          $scope.editor.setKeyboardHandler('ace/keyboard/emacs');
           $rootScope.isMac = true;
         } else if (navigator.appVersion.indexOf('Win') !== -1 ||
                    navigator.appVersion.indexOf('X11') !== -1 ||
@@ -604,17 +603,25 @@
                 var completions = [];
                 for (var c in data.completions) {
                   var v = data.completions[c];
-                  var nameAndScore = v.name.split(':');
+                  var nameAndScoreAndColumn = v.name.split(':');
                   completions.push({
                     name: v.value,
                     value: v.value,
-                    meta: nameAndScore[0],
-                    score: nameAndScore[1]
+                    meta: nameAndScoreAndColumn[0],
+                    score: nameAndScoreAndColumn[1],
+                    column: nameAndScoreAndColumn[2],
+                    completer: remoteCompleter
                   });
                 }
                 callback(null, completions);
               }
             });
+          },
+          insertMatch: function(editor, data) {
+            var cursor = editor.getCursorPosition();
+            var rangeToRemove = new Range(cursor.row, data.column - 1, cursor.row, data.column - 1 + data.value.length);
+            editor.session.remove(rangeToRemove);
+            editor.execCommand('insertstring', data.value);
           }
         };
 
